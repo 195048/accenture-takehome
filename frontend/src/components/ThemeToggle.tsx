@@ -8,9 +8,10 @@ export default function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label="Toggle dark mode"
-      className="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+      title="Toggle dark mode"
+      className="grid h-9 w-9 place-items-center rounded-md border border-slate-300 text-base hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
     >
-      {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
+      {theme === "dark" ? "☀️" : "🌙"}
     </button>
   );
 }
