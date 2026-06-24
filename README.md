@@ -1,11 +1,25 @@
 # accenture-takehome
 
+[![CI](https://github.com/195048/accenture-takehome/actions/workflows/ci.yml/badge.svg)](https://github.com/195048/accenture-takehome/actions/workflows/ci.yml)
+
 A small full-stack app that proxies and enriches data from the public
 [JSONPlaceholder](https://jsonplaceholder.typicode.com) API. A REST API (Express)
 fetches, caches and joins the upstream data; a React front-end consumes it.
 
 - **Backend** — [`/backend`](./backend), runs on http://localhost:3001
-- **Frontend** — [`/frontend`](./frontend), runs on http://localhost:5173 _(in progress)_
+- **Frontend** — [`/frontend`](./frontend), runs on http://localhost:5173
+
+## Architecture
+
+```
+Browser (React SPA)  ──HTTP──▶  API (Express + cache)  ──HTTP──▶  JSONPlaceholder
+   TanStack Query                 node-cache · zod                  (upstream)
+```
+
+The **API** proxies the upstream, validates input, caches each collection, and
+*enriches* two endpoints by joining related resources server-side — so the client
+makes one request instead of three. The **frontend** is a thin SPA that consumes
+the API through TanStack Query, which handles caching and loading/error states.
 
 ## Data model
 
@@ -148,4 +162,85 @@ repeated requests). `fetch` is mocked, so the suite is fast and runs offline.
 
 ## Frontend
 
-_In progress (Phase 2)._
+A React single-page app (Vite) that consumes the backend.
+
+### Stack
+
+- React 19 + TypeScript
+- Vite
+- React Router — routing
+- TanStack Query — data fetching, caching, loading/error states
+- Tailwind CSS v4 — styling, with class-based dark mode
+- Vitest + React Testing Library — tests
+
+### Running it
+
+From `/frontend`:
+
+```bash
+npm install        # once
+npm run dev        # http://localhost:5173
+npm test           # run the test suite (npm run test:watch for watch mode)
+npm run lint       # eslint
+npm run build      # type-check + production build
+```
+
+> The API base URL defaults to `http://localhost:3001`. Override it with the
+> `VITE_API_URL` env var (e.g. when the API is deployed elsewhere).
+
+### Pages & features
+
+- **Feed** (`/`) — paginated list of posts (title, excerpt, author) with **title
+  search** and an **author filter** (a searchable combobox). The selected author
+  lives in the URL (`?userId=`), so it's shareable and the Users page links
+  pre-filter the feed.
+- **Users** (`/users`) — the authors with a short summary; each links to their posts.
+- **Post detail** (`/posts/:id`) — full post, author info and comments, fetched in
+  one call from the enriched endpoint.
+- **Dark mode** — header toggle, remembered across reloads (no flash on load).
+- **Responsive** — works down to mobile widths.
+
+### How it's put together
+
+```
+src/
+  lib/         api.ts (typed client) · types.ts · theme.ts (dark mode)
+  hooks/       useUsers · usePosts · usePost   (TanStack Query)
+  components/  Layout · AuthorFilter · PostCard · Pagination · Loading · ErrorMessage
+  pages/       FeedPage · UsersPage · PostDetailPage
+  main.tsx     providers (QueryClient + Router)
+  App.tsx      routes
+```
+
+### Tests
+
+`npm test` runs the Vitest + React Testing Library suite. It renders pages against
+a mocked API and asserts behaviour — the users list and its error state, and the
+feed listing + title-search filtering. No network, so it's fast and offline.
+
+---
+
+## Tradeoffs & decisions
+
+- **Client-side feed search / filter / pagination.** The feed fetches the full
+  posts list once and does search, author-filtering and pagination in memory. With
+  ~100 posts this gives instant interactions and simpler code. The backend still
+  supports server-side pagination + `userId` filtering for larger datasets. **At
+  real scale** I'd switch the feed to server-side pagination, add a `?q=`
+  title-search param and a `GET /users?search=` endpoint, turn the author filter
+  into a debounced server-backed typeahead, and virtualize long lists — so the
+  client only ever loads what it shows.
+- **Whole-collection cache, short TTL.** Caching each upstream collection whole
+  (then paginating/joining in memory) keeps the cache trivial and correct for this
+  data size. A larger or more volatile dataset would want per-resource keys or
+  stale-while-revalidate.
+- **`app` / `server` split** in the backend exists purely to make the API testable
+  in-process with supertest.
+- **Node 22+.** Developed on Node 24; the code only uses features stable since
+  Node 22, pinned via `engines`.
+
+## Continuous integration
+
+GitHub Actions ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) runs on
+every push to `main` and on every pull request: it installs, type-checks, builds
+and tests **both** the backend and the frontend, on **Node 22 and 24**.
