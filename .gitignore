@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+
+# Claude Code — local only
+.claude/
+CLAUDE.md
+
+.DS_Store
+.vscode/
