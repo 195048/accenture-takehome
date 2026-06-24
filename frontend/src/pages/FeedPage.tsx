@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePosts } from "../hooks/usePosts";
 import { useUsers } from "../hooks/useUsers";
@@ -36,10 +36,15 @@ export default function FeedPage() {
     return list;
   }, [postsQuery.data, userId, search]);
 
-  // Any filter change sends us back to the first page.
-  useEffect(() => {
+  // Reset to the first page whenever the active filters change (search or the
+  // URL-driven author). Adjusting state during render is React's recommended
+  // alternative to a "reset in an effect" here.
+  const filterKey = `${userId ?? ""}|${search}`;
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (filterKey !== lastFilterKey) {
+    setLastFilterKey(filterKey);
     setPage(1);
-  }, [search, userId]);
+  }
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
