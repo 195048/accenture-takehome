@@ -4,6 +4,7 @@ import { usePosts } from "../hooks/usePosts";
 import { useUsers } from "../hooks/useUsers";
 import PostCard from "../components/PostCard";
 import Pagination from "../components/Pagination";
+import AuthorFilter from "../components/AuthorFilter";
 import Loading from "../components/Loading";
 import ErrorMessage from "../components/ErrorMessage";
 
@@ -44,10 +45,10 @@ export default function FeedPage() {
   const currentPage = Math.min(page, totalPages);
   const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  function selectAuthor(value: string) {
+  function selectAuthor(id: number | undefined) {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (value) next.set("userId", value);
+      if (id != null) next.set("userId", String(id));
       else next.delete("userId");
       return next;
     });
@@ -68,18 +69,7 @@ export default function FeedPage() {
           placeholder="Search by title…"
           className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 sm:flex-1"
         />
-        <select
-          value={userId ?? ""}
-          onChange={(e) => selectAuthor(e.target.value)}
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
-        >
-          <option value="">All authors</option>
-          {(usersQuery.data ?? []).map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-            </option>
-          ))}
-        </select>
+        <AuthorFilter authors={usersQuery.data ?? []} selectedId={userId} onChange={selectAuthor} />
       </div>
 
       <div className="mt-6">
