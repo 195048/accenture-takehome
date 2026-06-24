@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* Class-based dark mode: toggling `.dark` on the <html> element flips the whole
+   theme. The inline script in index.html sets it before first paint (no flash);
+   the useTheme hook keeps it in sync afterwards. */
+@custom-variant dark (&:where(.dark, .dark *));
